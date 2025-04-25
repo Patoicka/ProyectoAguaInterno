@@ -17,5 +17,5 @@ yarn-error.log
 /.idea
 /.vscode
 *.env
-*.env.example
+.env.example
 *.editorconfig

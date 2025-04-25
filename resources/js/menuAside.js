@@ -16,6 +16,7 @@ import {
   mdiFire,
   mdiMapMarkerAlertOutline,
   mdiTelevisionGuide,
+  mdiFileDocument,
 } from "@mdi/js";
 // import Icon from '@mdi/react';
 
@@ -72,6 +73,11 @@ export default [
         label: "Mapa de incidencias",
         route: "incident/Map",
         icon: mdiMapMarkerAlertOutline,
+      },
+      {
+        label: "Resumen de incidencias",
+        route: "incident.graph",
+        icon:mdiFileDocumentCheck,
       },
     ],
   },

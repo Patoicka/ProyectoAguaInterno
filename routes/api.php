@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LocationController;
 use Illuminate\Http\Request;
@@ -32,3 +33,7 @@ Route::get('get-location-pc/{postalCode}', [LocationController::class, 'getLocat
 Route::get('get-location-state/{stateId}', [LocationController::class, 'getLocationByState'])->name('location.getLocationByState');
 Route::get('get-location-city/{cityId}', [LocationController::class, 'getLocationByCity'])->name('location.getLocationByCity');
 Route::get('get-location-neighborhood/{neighborhoodId}', [LocationController::class, 'getLocationByNeighborhood'])->name('location.getLocationByNeighborhood');
+
+Route::get('/showIncident',[IncidentController::class,'chartIncident'])->name('showIncident');
+
+//Route::get('incidents-type',[IncidentTypeController::class,'show'])->withoutMiddleware(['auth','api'])->name('incidentType.show');
