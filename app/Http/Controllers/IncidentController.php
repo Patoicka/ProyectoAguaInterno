@@ -8,14 +8,9 @@ use App\Models\Incident;
 use App\Http\Requests\StoreIncidentRequest;
 use App\Http\Requests\UpdateIncidentRequest;
 use App\Mail\AssignReviewer;
-use App\Mail\NewIncident;
-use App\Mail\SendIncident;
-use App\Models\Contact;
 use App\Models\Evidence;
-use App\Models\File;
 use App\Models\IncidentType;
 use App\Models\Location;
-use App\Models\Neighborhood;
 use App\Models\Report;
 use App\Models\User;
 use App\Services\IncidentService;
@@ -23,12 +18,10 @@ use App\Traits\Filterable;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Response;
 use Inertia\Inertia;
-use Illuminate\Support\Str;
 
 class IncidentController extends Controller
 {
@@ -230,113 +223,4 @@ class IncidentController extends Controller
         return redirect()->back()->with('success', 'Evidencia guardada con éxito');
     }
 
-    /*  public function chartIncident(Request $request)
-     {
-         $data = Incident::selectRaw('count(*) as total, incident_types.name as type, YEAR(incidents.created_at) as year')
-             ->join('incident_types', 'incidents.incident_type_id', '=', 'incident_types.id')
-             ->groupBy('year', 'incident_types.name')
-             ->orderBy('year', 'asc')
-             ->get()
-             ->groupBy('type') // Agrupar los resultados por tipo de incidencia
-             ->map(function ($incidents, $type) {
-                 return [
-                     'label' => $type,
-                     'backgroundColor' => $this->generateRandomColor(), // Generar color aleatorio
-                     'borderColor' => 'rgba(75, 192, 192, 1)',
-                     'borderWidth' => 1,
-                     'data' => $incidents->pluck('total', 'year')->toArray(), // Obtener totales por año
-                 ];
-             })
-             ->values()
-             ->toArray();
-     
-         // Obtener todos los años únicos para las etiquetas
-         $years = Incident::selectRaw('YEAR(created_at) as year')
-             ->distinct()
-             ->orderBy('year', 'asc')
-             ->pluck('year')
-             ->toArray();
-     
-         return response()->json(['labels' => $years, 'datasets' => $data]);
-     } */
-
-     public function chartIncident(Request $request)
-     {
-         $query = Incident::selectRaw('count(*) as total, incident_types.name as type, YEAR(incidents.created_at) as year, incident_statuses.name as status')
-             ->join('incident_types', 'incidents.incident_type_id', '=', 'incident_types.id')
-             ->join('incident_statuses', 'incidents.incident_status_id', '=', 'incident_statuses.id')
-             ->join('locations', 'incidents.location_id', '=', 'locations.id')
-             ->join('neighborhoods', 'locations.neighborhood_id', '=', 'neighborhoods.id')
-             ->groupBy('year', 'incident_types.name', 'incident_statuses.name')
-             ->orderBy('year', 'asc');
-     
-         // Aplicar filtros dinámicos
-         if ($request->has('years') && is_array($request->years)) {
-             $query->whereYear('incidents.created_at', $request->years);
-         }
-     
-         if ($request->has('types') && is_array($request->types)) {
-             $query->whereIn('incident_types.name', $request->types);
-         }
-     
-         if ($request->has('statuses') && is_array($request->statuses)) {
-             $query->whereIn('incident_statuses.name', $request->statuses);
-         }
-     
-         if ($request->has('neighborhoods') && is_array($request->neighborhoods)) {
-             $query->whereIn('neighborhoods.name', $request->neighborhoods);
-         }
-     
-         $data = $query->get();
-     
-         // Preparar los datos en el formato esperado por Chart.js
-         $years = $data->pluck('year')->unique()->sort()->values()->toArray(); // Todos los años únicos
-         $types = $data->pluck('type')->unique()->sort()->values()->toArray();  // Todos los tipos únicos
-         $datasets = [];
-     
-         foreach ($types as $type) {
-             $typeData = $data->where('type', $type);
-             $backgroundColor = $this->generateRandomColor(); // Asegúrate de tener esta función
-             $borderColor = 'rgba(75, 192, 192, 1)';
-             $datasetData = [];
-     
-             foreach ($years as $year) {
-                 // Encuentra el registro correspondiente al año y tipo actual
-                 $record = $typeData->where('year', $year)->first();
-                 $count = $record ? $record->total : 0; // Si no hay registro, la cuenta es 0
-                 $datasetData[] = $count;
-             }
-     
-             $datasets[] = [
-                 'label' => $type,
-                 'backgroundColor' => $backgroundColor,
-                 'borderColor' => $borderColor,
-                 'borderWidth' => 1,
-                 'data' => $datasetData,
-             ];
-         }
-         return response()->json(['labels' => $years, 'datasets' => $datasets]);
-     }
-     
-    public function getAvailableFilters()
-    {
-        return response()->json([
-            'years' => Incident::selectRaw('YEAR(created_at) as year')->distinct()->orderBy('year')->pluck('year'),
-            'types' => IncidentType::pluck('name')->unique()->sort()->values(),
-            'statuses' => DB::table('incident_statuses')
-                ->select('name')
-                ->distinct()
-                ->orderBy('name', 'asc')
-                ->pluck('name'),
-            'neighborhoods' => Neighborhood::pluck('name')->unique()->sort()->values(),
-        ]);
-    }
-
-    private function generateRandomColor()
-    {
-        $r = mt_rand(0, 255);
-        $g = mt_rand(0, 255);
-        $b = mt_rand(0, 255);
-        return "rgba($r, $g, $b, 0.7)";
-    }
 }

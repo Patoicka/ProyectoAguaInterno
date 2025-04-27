@@ -89,9 +89,7 @@ class IncidentTypeController extends Controller
      */
     public function show(IncidentType $incidentType)
     {
-        $data = IncidentType::pluck('name','id');
-        return json_encode($data);
-        //abort(404);
+        abort(404);
     }
 
     /**

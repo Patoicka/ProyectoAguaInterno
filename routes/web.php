@@ -54,8 +54,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/incidentMap', function () { return Inertia::render('Visualizations/IncidentMap'); })->name('incident/Map');
     Route::get('/incident-graph', function () { return Inertia::render('Visualizations/IncidentGraph'); })->name('incident.graph');
-    Route::get('/showIncident',[IncidentController::class,'chartIncident'])->name('showIncident');
-    Route::get('/available-incident-filters', [IncidentController::class, 'getAvailableFilters']);
     
 });
 require __DIR__ . '/auth.php';

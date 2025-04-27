@@ -1,5 +1,8 @@
 <script setup>
-import { ref, onMounted, watch, render } from "vue";
+import { ref, onMounted } from "vue";
+import HeadLogo from "@/Components/HeadLogo.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import Button from "@/Components/Button.vue";
 import LayoutMain from "@/Layouts/LayoutMain.vue";
 import SectionTitleLineWithButton from "@/Components/SectionTitleLineWithButton.vue";
 import { mdiMapMarkerAlertOutline } from "@mdi/js";
@@ -23,13 +26,13 @@ const filtros = ref({
     years: [],
     types: [],
     statuses: [],
-    neighborhoods: []
+    cities: []
 });
 const availableFilters = ref({
     years: [],
     types: [],
     statuses: [],
-    neighborhoods: []
+    cities: []
 });
 const chartInstance = ref(null);
 
@@ -37,45 +40,53 @@ const filterMapping = {
     years: 'years',
     types: 'types',
     statuses: 'statuses',
-    neighborhoods: 'neighborhoods',
+    cities: 'cities'
 };
 
-const fetchChartData = (currentFilters = {}) => {
+const fetchChartData = (currentFilters = {}, wasFiltered = false) => {
     const mappedFilters = {};
     for (const key in currentFilters) {
         if (filterMapping[key]) {
             mappedFilters[filterMapping[key]] = currentFilters[key];
         }
     }
-    axios.get('/showIncident', { params: mappedFilters })
-        .then(response => {
-            // 1. Verificar la estructura de la respuesta:
-            console.log("Respuesta de fetchChartData:", response.data);
 
-            // 2. Asignar directamente los datos recibidos al chartData.value
+    axios.get(route('incident.showIncident'), { params: mappedFilters })
+        .then(response => {
             chartData.value = response.data;
-            updateChart(response.data); // Pasa la respuesta directamente a updateChart
+            updateChart(response.data, wasFiltered);
         })
         .catch(error => {
-            console.error('Error fetching chart data:', error);
+            console.error(error);
         });
 };
 
-const updateChart = (data) => { // Recibe los datos como argumento
-    if (chartInstance.value) {
-        chartInstance.value.destroy();
-    }
-    const ctx = document.getElementById('chart').getContext('2d');
+
+const updateChart = (data, wasFiltered = false) => {
+    const ctx = document.getElementById('chart')?.getContext('2d');
     if (!ctx) {
         console.error("No se pudo obtener el contexto del canvas");
         return;
     }
 
+    if (!data || !data.labels || data.labels.length === 0 || !data.datasets || data.datasets.length === 0) {
+        if (wasFiltered) {
+            alert("No existen datos para ese filtro.");
+            clearFilters();
+        }
+        return;
+    }
+
+    if (chartInstance.value) {
+        chartInstance.value.destroy();
+        chartInstance.value = null;
+    }
+
     chartInstance.value = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: data.labels,  // Usa las etiquetas del controlador
-            datasets: data.datasets // Usa los datasets del controlador
+            labels: data.labels || [],
+            datasets: data.datasets || []
         },
         options: {
             responsive: true,
@@ -97,7 +108,7 @@ const updateChart = (data) => { // Recibe los datos como argumento
                     display: true,
                     title: {
                         display: true,
-                        text: 'Periodo',
+                        text: 'Año',
                         font: {
                             size: 14
                         }
@@ -119,107 +130,95 @@ const updateChart = (data) => { // Recibe los datos como argumento
     });
 };
 
+
+
+
 const applyFilters = () => {
-    fetchChartData(filtros.value);
+    fetchChartData(filtros.value, true);
 };
 
-const fetchAvailableFilters = () => {
-  axios.get('/available-incident-filters')
-    .then(response => {
-      availableFilters.value = response.data;
-      if (response.data.years) {
-        availableFilters.value.years = response.data.years.map(year => ({
-          label: year.toString(),
-          value: year
-        }));
-      }
-      if (response.data.types) {
-        availableFilters.value.types = response.data.types.map(type => ({
-          label: type,
-          value: type
-        }));
-      }
-      if (response.data.statuses) {
-        availableFilters.value.statuses = response.data.statuses.map(status => ({
-          label: status,
-          value: status
-        }));
-      }
-      if (response.data.neighborhoods) {
-        availableFilters.value.neighborhoods = response.data.neighborhoods.map(neighborhood => ({
-          label: neighborhood,
-          value: neighborhood
-        }));
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching available filters:', error);
-    });
-};
 
+const fetchAvailableFilters = async () => {
+    try {
+        const cachedCities = localStorage.getItem('availableCities');
+        let cities = [];
+
+        if (cachedCities) {
+            cities = JSON.parse(cachedCities);
+        } else {
+            const response = await axios.get(route('incident.available-filters'));
+            cities = response.data.cities;
+            localStorage.setItem('availableCities', JSON.stringify(cities));
+        }
+
+        const response = await axios.get(route('incident.available-filters'));
+
+        availableFilters.value = {
+            years: response.data.years,
+            types: response.data.types,
+            statuses: response.data.statuses,
+            cities: cities,
+        };
+    } catch (error) {
+    }
+};
 
 onMounted(() => {
-  fetchAvailableFilters();  // Primero obtener los filtros disponibles
-  fetchChartData(); // Luego obtener los datos del gráfico inicial
+    fetchAvailableFilters();
+    fetchChartData();
 });
 
-
-
-/* async function fetchChartData(){
-    const charData = ref(null);
-    try{
-        const response = await axios.get('/showIncident');
-        renderChart(response.data);
-    }catch (error) {
-        console.error("Error fetching chart data:", error);
-    }
-}
-
-function renderChart(data) {
-    const ctx = document.getElementById('chart').getContext('2d');
-    
-    new Chart(ctx, {
-        type: 'bar',
-        data: data
-    });
-} */
-
+const clearFilters = () => {
+    filtros.value = {
+        years: [],
+        types: [],
+        statuses: [],
+        cities: []
+    };
+    fetchChartData();
+};
 
 </script>
 
 <template>
-    <HeadLogo :title="title" />
+    <HeadLogo :title="Conagua" />
 
     <LayoutMain>
-        <SectionTitleLineWithButton :icon="mdiMapMarkerAlertOutline" title="tittle" main />
+        <SectionTitleLineWithButton :icon="mdiMapMarkerAlertOutline" title="Dashboard - Incidencias" main />
 
         <CardBox>
             <div class="flex flex-col w-full h-full">
                 <div class="flex flex-col sm:flex-row w-full sm:w-fit justify-between pb-4 sm:pb-0 sm:py-2 ">
-
                     <FormField class="order-2 sm:order-1" label="Años">
-                        <FormControl placeholder="Seleccione Años" :options="availableFilters.years"
-                            v-model="filtros.years" multiple />
+                        <FormControl placeholder="Seleccione Años" @change="applyFilters"
+                            :options="availableFilters.years" v-model="filtros.years" />
                     </FormField>
 
-                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Tipos">
-                        <FormControl placeholder="Seleccione Tipos" :options="availableFilters.types"
-                            v-model="filtros.types" multiple />
+                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Tipo Incidencia">
+                        <FormControl placeholder="Seleccione Tipo de Incidencia" @change="applyFilters"
+                            :options="availableFilters.types" v-model="filtros.types" option-label="label"
+                            option-value="value" />
                     </FormField>
 
-                    <FormField class="order-2 sm:order-1" label="Estados">
-                        <FormControl placeholder="Seleccione Estados" :options="availableFilters.statuses"
-                            v-model="filtros.statuses" multiple />
+                    <FormField class="order-2 sm:order-1" label="Estado Incidencia">
+                        <FormControl placeholder="Seleccione un Estado" @change="applyFilters"
+                            :options="availableFilters.statuses" v-model="filtros.statuses" />
                     </FormField>
-                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Colonias">
-                        <FormControl placeholder="Seleccione Colonias" :options="availableFilters.neighborhoods"
-                            v-model="filtros.neighborhoods" multiple />
+                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Municipio">
+                        <FormControl placeholder="Seleccione Municipio" @change="applyFilters"
+                            :options="availableFilters.cities" v-model="filtros.cities" />
                     </FormField>
-
+                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Acciones">
+                        <PrimaryButton @click="clearFilters">
+                            Limpiar Filtros
+                        </PrimaryButton>
+                        <Button @click="applyFilters">
+                            Exportar
+                        </Button>
+                    </FormField>
                 </div>
-                <button @click="applyFilters">Aplicar Filtros</button>
-                <!-- Mapa -->
-                <div> <canvas id="chart"></canvas></div>
+
+                <div> <canvas id="chart" height="50%" width="100%"></canvas></div>
             </div>
         </CardBox>
     </LayoutMain>
