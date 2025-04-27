@@ -6,6 +6,9 @@ use App\Http\Controllers\LocationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\IncidentMapController;
+use App\Http\Controllers\IncidentGraphController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -32,3 +35,6 @@ Route::get('get-location-pc/{postalCode}', [LocationController::class, 'getLocat
 Route::get('get-location-state/{stateId}', [LocationController::class, 'getLocationByState'])->name('location.getLocationByState');
 Route::get('get-location-city/{cityId}', [LocationController::class, 'getLocationByCity'])->name('location.getLocationByCity');
 Route::get('get-location-neighborhood/{neighborhoodId}', [LocationController::class, 'getLocationByNeighborhood'])->name('location.getLocationByNeighborhood');
+
+Route::get('/map/incidents', [IncidentMapController::class, 'index']);
+Route::get('/grafico/incidencias', [IncidentGraphController::class, 'getIncidents']);

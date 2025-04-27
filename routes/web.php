@@ -26,6 +26,7 @@ use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 | contains the "web" middleware group. Now create something great!
 |
 */
+
 Route::get('/', [WelcomeController::class, 'welcome'])->name('welcome');
 Route::get('/welcome/incident/create', [WelcomeController::class, 'createIncidet'])->name('welcome.create.incidet');
 Route::post('/welcome/incident/store', [WelcomeController::class, 'storeIncidet'])->name('welcome.store.incidet');
@@ -52,8 +53,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('incident-assigned/{incident}', [IncidentController::class, 'assigned'])->name('incident.assigned');
     Route::post('incident-evidenced/{incident}', [IncidentController::class, 'evidenced'])->name('incident.evidenced');
 
-    Route::get('/incidentMap', function () { return Inertia::render('Visualizations/IncidentMap'); })->name('incident/Map');
-    
+    Route::get('/incidentMap', function () {
+        return Inertia::render('Visualizations/IncidentMap');
+    })->name('incident/Map');
+    Route::get('/graphic.index', function () {
+        return Inertia::render('Visualizations/BarStacked');
+    })->name('graphic.index');
 });
 
 require __DIR__ . '/auth.php';
