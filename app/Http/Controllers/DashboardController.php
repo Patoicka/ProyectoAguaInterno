@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Incident;
 use App\Models\IncidentType;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 class DashboardController extends Controller
@@ -28,6 +29,12 @@ class DashboardController extends Controller
         ]);
     }
 
+    /**
+     * Muestra el gráfico de incidencias.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function chartIncident(Request $request)
     {
         $query = Incident::selectRaw('
@@ -115,6 +122,11 @@ class DashboardController extends Controller
         return response()->json(['labels' => $years, 'datasets' => $datasets]);
     }
 
+    /**
+     * Obtiene los filtros disponibles para las incidencias.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function getAvailableFilters()
     {
         $cities = Cache::remember('available_cities', 60 * 60, function () {
@@ -129,6 +141,11 @@ class DashboardController extends Controller
         ]);
     }
 
+    /**
+     * Genera un color aleatorio en formato rgba.
+     *
+     * @return string
+     */
     private function generateRandomColor()
     {
         $r = mt_rand(0, 255);
@@ -136,4 +153,32 @@ class DashboardController extends Controller
         $b = mt_rand(0, 255);
         return "rgba($r, $g, $b, 0.7)";
     }
+
+    /**
+     * Exporta en PDF todas las incidencias de un año.
+     */
+    
+
+    public function exportPorAnio(Request $request)
+    {
+        $anio = $request->get('anio');
+    
+        $incidencias = Incident::with([
+            'report',
+            'report.contact',
+            'location.neighborhood.city',
+            'incidentType',
+            'incidentStatus'
+        ])
+        ->whereYear('created_at', $anio)
+        ->get();
+    
+        $pdf = Pdf::loadView('pdf.incidencias_por_anio', [
+            'incidencias' => $incidencias,
+            'anio' => $anio
+        ])->setPaper('a4', 'landscape');
+    
+        return $pdf->stream("incidencias_{$anio}.pdf");
+    }
+    
 }

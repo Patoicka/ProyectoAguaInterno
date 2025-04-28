@@ -11,6 +11,8 @@ import FormField from "@/Components/FormField.vue";
 import FormControl from "@/Components/FormControl.vue";
 import { Chart } from "chart.js/auto";
 import axios from "axios";
+import {mdiFilePdfBox} from "@mdi/js";
+import { icon } from "leaflet";
 
 const props = defineProps({
     name: 'IncidentGraph',
@@ -18,6 +20,7 @@ const props = defineProps({
     routeName: { type: String, required: true },
     incident: { type: Object, required: true, default: {} },
 });
+
 const chartData = ref({
     labels: [],
     datasets: []
@@ -178,6 +181,16 @@ const clearFilters = () => {
     fetchChartData();
 };
 
+const exportPdf = () => {
+    if (!filtros.value.years || filtros.value.years.length === 0) {
+        alert("Por favor, seleccione un año para exportar el PDF.");
+        return;
+    }
+    const year = filtros.value.years;
+    const url = route('incident.exportPdf')+`?anio=${year}`;
+    window.open(url, '_blank');
+};
+
 </script>
 
 <template>
@@ -212,9 +225,11 @@ const clearFilters = () => {
                         <PrimaryButton @click="clearFilters">
                             Limpiar Filtros
                         </PrimaryButton>
-                        <Button @click="applyFilters">
-                            Exportar
+
+                        <Button @click="exportPdf" :icon="mdiFilePdfBox" class="ml-2" icon="mdiFilePdfBox" color="redWhite">
+                            Exportar PDF
                         </Button>
+
                     </FormField>
                 </div>
 
