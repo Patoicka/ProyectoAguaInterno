@@ -140,14 +140,13 @@ onMounted(() => {
     <SectionTitleLineWithButton :icon="mdiChartBarStacked" title="Gráfica de incidencias por tipo y estatus" main />
     <CardBox>
       <div class="flex flex-col w-full h-full">
-        <div class="flex flex-col sm:flex-row w-full sm:w-fit justify-between pb-4 sm:pb-0">
+        <div class="flex-row w-full sm:w-fit justify-between pb-4 sm:pb-0">
           <FormField class="order-2 sm:order-1" label="Cantidad">
             <FormControl placeholder="Elige una cantidad" :options="options" v-model="selectedOption" />
           </FormField>
         </div>
       </div>
 
-      <!-- Aseguramos que el gráfico tiene un contenedor adecuado para overflow -->
       <div class="overflow-x-auto mt-4">
         <div ref="grafico" class="w-full min-w-[1200px] sm:w-full h-[610px]"></div>
       </div>
