@@ -75,6 +75,16 @@ export default [
         route: "incident/Map",
         icon: mdiMapMarkerAlertOutline,
       },
+      {
+        label: "Gráfico de incidencias",
+        route: "graphic.index",
+        icon: mdiChartBarStacked,
+      },
+      {
+        label: "Resumen de incidencias",
+        route: "incident.graph",
+        icon: mdiFileDocumentCheck,
+      },
     ],
   },
   {
