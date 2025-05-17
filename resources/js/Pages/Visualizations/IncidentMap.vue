@@ -330,7 +330,6 @@ onMounted(() => {
 
         </div>
 
-        <!-- Mapa -->
         <div id="map" class="w-full h-[600px] rounded shadow"></div>
       </div>
     </CardBox>
