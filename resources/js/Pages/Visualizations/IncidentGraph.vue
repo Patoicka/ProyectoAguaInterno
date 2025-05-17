@@ -8,11 +8,11 @@ import SectionTitleLineWithButton from "@/Components/SectionTitleLineWithButton.
 import CardBox    from "@/Components/CardBox.vue";
 import FormField  from "@/Components/FormField.vue";
 import FormControl from "@/Components/FormControl.vue";
-import { Chart }  from "chart.js/auto";
-import axios      from "axios";
-import { mdiMapMarkerAlertOutline, mdiFilePdfBox } from "@mdi/js";
+import { Chart } from "chart.js/auto";
+import axios from "axios";
+import {mdiFilePdfBox} from "@mdi/js";
+import { icon } from "leaflet";
 
-/* ── 1. props ─────────────────────────────────────────────── */
 const props = defineProps({
   routeName: { type: String, default: "" },         // ← ya no required
   name:      { type: String, default: "IncidentGraph" },
@@ -115,69 +115,58 @@ const clearFilters = () => {
 
 /* ── 6. exportar PDF ───────────────────────────────────────── */
 const exportPdf = () => {
-  let year = filtros.value.years;
-  if (Array.isArray(year)) {
-    if (!year.length) return alert("Seleccione al menos un año");
-    year = year[0];
-  } else if (!year) {
-    return alert("Seleccione al menos un año");
-  }
-
-  const params = new URLSearchParams({ anio: year });
-  const toArr  = (v) => (Array.isArray(v) ? v : v ? [v] : []);
-
-  toArr(filtros.value.types).forEach(t => params.append("tipos[]", t));
-  toArr(filtros.value.statuses).forEach(s => params.append("status[]", s));
-  toArr(filtros.value.cities).forEach(c => params.append("city[]", c));
-
-  window.open(`${route("incident.exportPdf")}?${params.toString()}`, "_blank");
+    if (!filtros.value.years || filtros.value.years.length === 0) {
+        alert("Por favor, seleccione un año para exportar el PDF.");
+        return;
+    }
+    const year = filtros.value.years;
+    const url = route('incident.exportPdf')+`?anio=${year}`;
+    window.open(url, '_blank');
 };
 </script>
 
 <template>
   <HeadLogo title="Conagua" />
 
-  <LayoutMain>
-    <SectionTitleLineWithButton :icon="mdiMapMarkerAlertOutline" title="Dashboard - Incidencias" main />
+    <LayoutMain>
+        <SectionTitleLineWithButton :icon="mdiMapMarkerAlertOutline" title="Dashboard - Incidencias" main />
 
-    <CardBox>
-      <div class="flex flex-col w-full h-full">
-        <!-- filtros -->
-        <div class="flex flex-col sm:flex-row w-full sm:w-fit justify-between pb-4 sm:pb-0 sm:py-2">
-          <FormField label="Años">
-            <FormControl placeholder="Seleccione Años" :options="availableFilters.years"
-                         v-model="filtros.years" @change="applyFilters" />
-          </FormField>
+        <CardBox>
+            <div class="flex flex-col w-full h-full">
+                <div class="flex flex-col sm:flex-row w-full sm:w-fit justify-between pb-4 sm:pb-0 sm:py-2 ">
+                    <FormField class="order-2 sm:order-1" label="Años">
+                        <FormControl placeholder="Seleccione Años" @change="applyFilters"
+                            :options="availableFilters.years" v-model="filtros.years" />
+                    </FormField>
 
-          <FormField class="sm:mx-4" label="Tipo Incidencia">
-            <FormControl placeholder="Seleccione Tipo de Incidencia" :options="availableFilters.types"
-                         v-model="filtros.types" option-label="label" option-value="value"
-                         @change="applyFilters" />
-          </FormField>
+                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Tipo Incidencia">
+                        <FormControl placeholder="Seleccione Tipo de Incidencia" @change="applyFilters"
+                            :options="availableFilters.types" v-model="filtros.types" option-label="label"
+                            option-value="value" />
+                    </FormField>
 
-          <FormField label="Estado Incidencia">
-            <FormControl placeholder="Seleccione un Estado" :options="availableFilters.statuses"
-                         v-model="filtros.statuses" @change="applyFilters" />
-          </FormField>
+                    <FormField class="order-2 sm:order-1" label="Estado Incidencia">
+                        <FormControl placeholder="Seleccione un Estado" @change="applyFilters"
+                            :options="availableFilters.statuses" v-model="filtros.statuses" />
+                    </FormField>
+                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Municipio">
+                        <FormControl placeholder="Seleccione Municipio" @change="applyFilters"
+                            :options="availableFilters.cities" v-model="filtros.cities" />
+                    </FormField>
+                    <FormField class="order-2 sm:order-1 sm:mx-4" label="Acciones">
+                        <PrimaryButton @click="clearFilters">
+                            Limpiar Filtros
+                        </PrimaryButton>
 
-          <FormField class="sm:mx-4" label="Municipio">
-            <FormControl placeholder="Seleccione Municipio" :options="availableFilters.cities"
-                         v-model="filtros.cities" @change="applyFilters" />
-          </FormField>
+                        <Button @click="exportPdf" :icon="mdiFilePdfBox" class="ml-2" icon="mdiFilePdfBox" color="redWhite">
+                            Exportar PDF
+                        </Button>
 
-          <FormField class="sm:mx-4" label="Acciones">
-            <PrimaryButton @click="clearFilters">Limpiar Filtros</PrimaryButton>
-            <Button class="ml-2" :icon="mdiFilePdfBox" color="redWhite" @click="exportPdf">
-              Exportar PDF
-            </Button>
-          </FormField>
-        </div>
+                    </FormField>
+                </div>
 
-        <!-- gráfica -->
-        <div>
-          <canvas id="chart" height="50%" width="100%"></canvas>
-        </div>
-      </div>
-    </CardBox>
-  </LayoutMain>
+                <div> <canvas id="chart" height="50%" width="100%"></canvas></div>
+            </div>
+        </CardBox>
+    </LayoutMain>
 </template>

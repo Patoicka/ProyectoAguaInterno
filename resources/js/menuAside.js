@@ -16,6 +16,7 @@ import {
   mdiFire,
   mdiMapMarkerAlertOutline,
   mdiTelevisionGuide,
+  mdiFileDocument,
   mdiChartBarStacked,
   mdiFileDocument,
 } from "@mdi/js";
