@@ -11,6 +11,7 @@ import CardBox from "@/Components/CardBox.vue";
 import FormField from "@/Components/FormField.vue";
 import FormControl from "@/Components/FormControl.vue";
 import axios from "axios";
+import wellknown from "wellknown";
 
 let map;
 let markersLayer = null;
@@ -73,13 +74,39 @@ const initMap = () => {
     "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
   ).addTo(map);
 
-  fetch("assets/geojson/mexico.geojson")
-    .then((Response) => Response.json())
+  fetch("assets/geojson/mexico.json")
+    .then((res) => res.json())
     .then((data) => {
-      L.geoJSON(data, {
-        style: { color: "blue", weight: 1, opacity: 1, fillOpacity: 0.1 },
-      }).addTo(map);
+      data.forEach((item) => {
+        const geometry = wellknown(item.poligono);
+        if (!geometry) {
+          console.warn("No se pudo convertir el polígono de:", item.municipio);
+          return;
+        }
+
+        const feature = {
+          type: "Feature",
+          properties: {
+            municipio: item.municipio,
+          },
+          geometry: geometry,
+        };
+
+        const layer = L.geoJSON(feature, {
+          style: {
+            color: "blue",
+            weight: 1,
+            fillOpacity: 0.1,
+          },
+        });
+
+        layer.addTo(map);
+      });
+    })
+    .catch((error) => {
+      console.error("Error al cargar geojson:", error);
     });
+
 
   aplicarFiltros();
 };
@@ -96,14 +123,12 @@ const renderMarkers = () => {
     let color;
     let popUpContent;
 
-    // Función para capitalizar la primera letra de cada palabra
     const capitalizeFirstLetter = (string) => {
       return string
         .toLowerCase()
         .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
     };
 
-    // Definir color según el estatus
     if (i.estatus === "Enviada a revisión") {
       color = "bg-red-500";
     } else if (i.estatus === "En proceso de atención") {
@@ -144,129 +169,47 @@ const renderMarkers = () => {
   });
 };
 
-const getIconByStatus = (status, type) => {
-  let iconUrl;
+const iconMap = {
+  "Falta de agua": "lackofwater",
+  "Solicitud de pipa": "waterpipe",
+  "Fuga": "waterleak",
+  "Falta de tapa en caja de valvula": "valve",
+  "Brote de aguas negras": "sewage",
+  "Coladera sin tapa": "colanderwithoutlid",
+  "Socavón": "sinkhole",
+  "Encharcamiento": "flood",
+  "Mala calidad": "poorquality",
+  "Huachicol": "huachicol",
+};
 
-  switch (status) {
-    case "Incidencia resuelta":
-      switch (type){
-        case "Falta de agua":
-          iconUrl = "/icons/lackofwaterG.png";
-          break;
-        case "Solicitud de pipa":
-          iconUrl = "/icons/waterpipeG.png";
-          break;
-        case "Fuga":
-          iconUrl = "/icons/waterleakG.png";
-          break;
-        case "Falta de tapa en caja de valvula":
-          iconUrl = "/icons/valveG.png";
-          break;
-        case "Brote de aguas negras":
-          iconUrl = "/icons/sewageG.png";
-          break;
-        case "Coladera sin tapa":
-          iconUrl = "/icons/colanderwithoutlidG.png";
-          break;
-        case "Socavón":
-          iconUrl = "/icons/sinkholeG.png";
-          break;
-        case "Encharcamiento":
-          iconUrl = "/icons/floodG.png";
-          break;
-        case "Mala calidad":
-          iconUrl = "/icons/poorqualityG.png";
-          break;
-        case "Huachicol":
-          iconUrl = "/icons/huachicolG.png";
-          break;
-        default:
-          iconUrl = "/icons/resolved.png";
-          break;
-      }
-      break;
-    case "En proceso de atención":
-      switch (type){
-        case "Falta de agua":
-          iconUrl = "/icons/lackofwaterY.png";
-          break;
-        case "solicitud de pipa":
-          iconUrl = "/icons/waterpipeY-png";
-          break; 
-        case "Fuga":
-          iconUrl = "/icons/waterleakY.png";
-          break;
-        case "Falta de tapa en caja de valvula":
-          iconUrl = "/icons/valveY.png";
-          break;
-        case "Brote de aguas negras":
-          iconUrl = "/icons/sewageY.png";
-          break;
-        case "Coladera sin tapa":
-          iconUrl = "/icons/colanderwithoutlidY.png";
-          break;
-        case "Socavón":
-          iconUrl = "/icons/sinkholeG.png";
-          break;
-        case "Encharcamiento":
-          iconUrl = "/icons/floodY.png";
-          break;
-        case "Mala calidad":
-          iconUrl = "/icons/poorqualityY.png";
-          break;
-        case "Huachicol":
-          iconUrl = "/icons/huachicolY.png";
-          break;
-        default:
-          iconUrl = "/icons/in_progress.png";
-          break;
-      }
-      break;
-    case "Enviada a revisión":
-      switch (type){
-        case "Falta de agua":
-          iconUrl = "/icons/lackofwaterR.png";
-          break;
-        case "Solicitud de pipa":
-          iconUrl = "/icons/waterpipeR.png";
-          break;
-        case "Fuga":
-          iconUrl = "/icons/waterleakR.png";
-          break;
-        case "Falta de tapa en caja de valvula":
-          iconUrl = "/icons/valveR.png";
-          break;
-        case "Brote de aguas negras":
-          iconUrl = "/icons/sewageR.png";
-          break;
-        case "Coladera sin tapa":
-          iconUrl = "/icons/colanderwithoutlidR.png";
-          break;
-        case "Socavón":
-          iconUrl = "/icons/sinkholeR.png";
-          break;
-        case "Encharcamiento":
-          iconUrl = "/icons/floodR.png";
-          break;
-        case "Mala calidad":
-          iconUrl = "/icons/poorqualityR.png";
-          break;
-        case "Huachicol":
-          iconUrl = "/icons/huachicolR.png";
-          break;
-        default:
-          iconUrl = "/icons/under_review.png";
-          break;
-      }
-      break;
-  }
+const statusSuffixMap = {
+  "Incidencia resuelta": "G",
+  "En proceso de atención": "Y",
+  "Enviada a revisión": "R",
+};
+
+const defaultIcons = {
+  "Incidencia resuelta": "/icons/resolved.png",
+  "En proceso de atención": "/icons/in_progress.png",
+  "Enviada a revisión": "/icons/under_review.png",
+};
+
+const getIconByStatus = (status, type) => {
+  const baseName = iconMap[type];
+  const suffix = statusSuffixMap[status];
+
+  const iconUrl = baseName
+    ? `/icons/${baseName}${suffix}.png`
+    : defaultIcons[status] || "/icons/default.png";
+
   return L.icon({
     iconUrl,
-    iconSize: [40, 40],
+    iconSize: [30, 30],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
   });
 };
+
 
 const cargarIncidencias = async () => {
   try {
