@@ -95,7 +95,6 @@ class DashboardController extends Controller
                     'data' => $datasetData,
                 ];
             }
-
         } else {
 
             foreach ($types as $type) {
@@ -157,12 +156,12 @@ class DashboardController extends Controller
     /**
      * Exporta en PDF todas las incidencias de un año.
      */
-    
 
-    public function exportPorAnio(Request $request)
+
+    /**public function exportPorAnio(Request $request)
     {
         $anio = $request->get('anio');
-    
+
         $incidencias = Incident::with([
             'report',
             'report.contact',
@@ -170,15 +169,56 @@ class DashboardController extends Controller
             'incidentType',
             'incidentStatus'
         ])
-        ->whereYear('created_at', $anio)
-        ->get();
-    
+            ->whereYear('created_at', $anio)
+            ->get();
+
         $pdf = Pdf::loadView('pdf.incidencias_por_anio', [
             'incidencias' => $incidencias,
             'anio' => $anio
         ])->setPaper('a4', 'landscape');
-    
+
         return $pdf->stream("incidencias_{$anio}.pdf");
     }
-    
+     **/
+    public function exportPdf(Request $request)
+    {
+        $anio     = (int) $request->input('anio');
+        $tipos    = (array) $request->input('tipos',   []);
+        $estados  = (array) $request->input('status',  []);
+        $ciudades = (array) $request->input('city',    []);
+
+        $incidencias = Incident::with([
+            'report',
+            'report.contact',
+            'location.neighborhood.city',
+            'incidentType',
+            'incidentStatus',
+        ])
+            ->whereYear('created_at', $anio)
+            ->when($tipos,    fn($q) => $q->whereHas(
+                'incidentType',
+                fn($qq) => $qq->whereIn('name', $tipos)
+            ))
+            ->when($estados,  fn($q) => $q->whereHas(
+                'incidentStatus',
+                fn($qq) => $qq->whereIn('name', $estados)
+            ))
+            ->when($ciudades, fn($q) => $q->whereHas(
+                'location.neighborhood.city',
+                fn($qq) => $qq->whereIn('name', $ciudades)
+            ))
+            ->get();
+
+        /* Usa el nombre real de tu vista Blade:
+       - 'incidencias_por_anio' si está en resources/views/
+       - 'pdf.incidencias_por_anio' si está en resources/views/pdf/      */
+        $pdf = Pdf::loadView('pdf.incidencias_por_anio', [
+            'incidencias' => $incidencias,
+            'anio'        => $anio,
+            'tipos'       => $tipos,
+        ])
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->stream("incidencias_{$anio}.pdf");
+    }
 }

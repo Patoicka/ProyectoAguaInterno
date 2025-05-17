@@ -3,65 +3,130 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Incidencias {{ $anio }}</title>
+    <title>Control de incidencias {{ now()->format('Y-m-d H:i:s') }}</title>
+
     <style>
-        body {
-            font-family: sans-serif;
-            font-size: 12px;
+        :root {
+            --dorado: #B89356;
+            --gris-borde: #CCCCCC;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            font-size: 12px;
+            margin: 18px 28px;
+            color: #000;
+        }
+
+        /* -------- cabecera (usa tabla, no flex) -------- */
+        .cabecera {
+            width: 100%;
+        }
+
+        .cabecera td {
+            vertical-align: top;
+        }
+
+        .titulo {
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .logo {
+            text-align: right;
+        }
+
+        .logo img {
+            height: 70px;
+        }
+
+        /* -------- tabla de datos -------- */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1em;
+            margin-top: 12px;
         }
 
         th,
         td {
-            border: 1px solid #444;
-            padding: 4px;
+            font-size: 11px;
+            line-height: 1.2;
+            padding: 4px 6px;
+        }
+
+        td {
+            border: 1px solid var(--gris-borde);
+            padding: 4px 6px;
         }
 
         th {
-            background: #eee;
+            background: #B89356;
+            /* dorado corporativo */
+            color: #FFFFFF;
+            /* texto blanco */
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            border: 1px solid var(--dorado);
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #F4F6F9;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #FFFFFF;
         }
     </style>
 </head>
 
 <body>
-    <h1>Incidencias Año {{ $anio }}</h1>
+    {{-- Cabecera con tabla: título izquierda, logo derecha --}}
+    <table class="cabecera">
+        <tr>
+            <td class="titulo">
+                Control de incidencias<br>
+                {{ now()->format('Y-m-d H:i:s') }}
+            </td>
+            <td class="logo">
+                <img src="{{ public_path('img/conagua.png') }}" alt="Logo CONAGUA">
+            </td>
+        </tr>
+    </table>
+
+    {{-- Tabla de incidencias --}}
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Código</th>
-                <th>Estado</th>
-                <th>Descripción</th>
+                <th style="width:30px">N°</th>
+                <th>Folio</th>
+                <th>Solicitante</th>
+                <th>Contacto</th>
                 <th>Tipo</th>
-                <th>Geom.</th>
-                <th>Coords.</th>
-                <th>Reporta</th>
-                <th>Email</th>
-                <th>Lat</th>
-                <th>Lon</th>
-                <th>Fecha CREA</th>
+                <th>Estatus</th>
+                <th style="width:95px">Fecha</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($incidencias as $i)
+            @foreach($incidencias as $idx => $inc)
             <tr>
-                <td>{{ $i->id }}</td>
-                <td>{{ $i->unique_code }}</td>
-                <td>{{ $i->incidentStatus->name }}</td>
-                <td>{{ $i->description }}</td>
-                <td>{{ $i->incidentType->name }}</td>
-                <td>{{ $i->location->type }}</td>
-                <td>{{ json_encode($i->location->coordinates) }}</td>
-                <td>{{ $i->report->full_name }}</td>
-                <td>{{ $i->report->contact->email }}</td>
-                <td>{{ $i->location->lat }}</td>
-                <td>{{ $i->location->lon }}</td>
-                <td>{{ $i->created_at->format('Y-m-d') }}</td>
+                <td style="text-align:center">{{ $idx+1 }}</td>
+                <td>{{ $inc->unique_code }}</td>
+                <td>{{ $inc->report->full_name }}</td>
+                <td>
+                    @php
+                    $c = $inc->report->contact;
+                    echo trim($c->phone.' '.$c->email);
+                    @endphp
+                </td>
+                <td>{{ $inc->incidentType->name }}</td>
+                <td>{{ $inc->incidentStatus->name }}</td>
+                <td>{{ $inc->created_at->format('Y-m-d H:i:s') }}</td>
             </tr>
             @endforeach
         </tbody>

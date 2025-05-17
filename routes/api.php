@@ -34,6 +34,11 @@ Route::get('get-location-pc/{postalCode}', [LocationController::class, 'getLocat
 Route::get('get-location-state/{stateId}', [LocationController::class, 'getLocationByState'])->name('location.getLocationByState');
 Route::get('get-location-city/{cityId}', [LocationController::class, 'getLocationByCity'])->name('location.getLocationByCity');
 Route::get('get-location-neighborhood/{neighborhoodId}', [LocationController::class, 'getLocationByNeighborhood'])->name('location.getLocationByNeighborhood');
-Route::get('/showIncident',[DashboardController::class,'chartIncident'])->name('incident.showIncident')->withoutMiddleware(['auth','api']);
-Route::get('/available-incident-filters', [DashboardController::class, 'getAvailableFilters'])->name('incident.available-filters')->withoutMiddleware(['auth','api']);
-Route::get('/dashboard/incidencias/export-pdf',[DashboardController::class, 'exportPorAnio'])->name('incident.exportPdf')->withoutMiddleware(['auth', 'api','can:incident.index']);
+Route::get('/showIncident', [DashboardController::class, 'chartIncident'])->name('incident.showIncident')->withoutMiddleware(['auth', 'api']);
+Route::get('/available-incident-filters', [DashboardController::class, 'getAvailableFilters'])->name('incident.available-filters')->withoutMiddleware(['auth', 'api']);
+//Route::get('/dashboard/incidencias/export-pdf',[DashboardController::class, 'exportPorAnio'])->name('incident.exportPdf')->withoutMiddleware(['auth', 'api','can:incident.index']);
+Route::get(
+    '/dashboard/incidencias/export-pdf',
+    [DashboardController::class, 'exportPdf']
+)->name('incident.exportPdf')
+    ->withoutMiddleware(['auth', 'api', 'can:incident.index']);
