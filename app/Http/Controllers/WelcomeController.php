@@ -71,7 +71,8 @@ class WelcomeController extends Controller
         }
     }
 
-    public function searchIncident(string $code = null)
+    public function searchIncident(?string $code = null)
+
     {
         return Inertia::render("{$this->source}Incident/Search", [
             'title'     => 'Buscador de incidencias',

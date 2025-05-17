@@ -18,7 +18,7 @@ let markersLayer = null;
 const problematicsOptions = [
   "Todos", "Falta de agua", "Solicitud de pipa", "Fuga",
   "Falta de tapa en caja de valvula", "Brote de aguas negras", "Coladera sin tapa",
-  "Socavón", "Encharcamiento", "mala calidad", "Huachicol"
+  "Socavón", "Encharcamiento", "Mala calidad", "Huachicol"
 ];
 
 const statusOptions = [
@@ -137,30 +137,132 @@ const renderMarkers = () => {
   `;
 
     L.marker([i.lat, i.lng], {
-      icon: getIconByStatus(i.estatus),
+      icon: getIconByStatus(i.estatus, i.tipo),
     })
       .addTo(markersLayer)
       .bindPopup(popUpContent);
   });
 };
 
-const getIconByStatus = (status) => {
+const getIconByStatus = (status, type) => {
   let iconUrl;
 
   switch (status) {
     case "Incidencia resuelta":
-      iconUrl = "/icons/resolved.png";
+      switch (type){
+        case "Falta de agua":
+          iconUrl = "/icons/lackofwaterG.png";
+          break;
+        case "Solicitud de pipa":
+          iconUrl = "/icons/waterpipeG.png";
+          break;
+        case "Fuga":
+          iconUrl = "/icons/waterleakG.png";
+          break;
+        case "Falta de tapa en caja de valvula":
+          iconUrl = "/icons/valveG.png";
+          break;
+        case "Brote de aguas negras":
+          iconUrl = "/icons/sewageG.png";
+          break;
+        case "Coladera sin tapa":
+          iconUrl = "/icons/colanderwithoutlidG.png";
+          break;
+        case "Socavón":
+          iconUrl = "/icons/sinkholeG.png";
+          break;
+        case "Encharcamiento":
+          iconUrl = "/icons/floodG.png";
+          break;
+        case "Mala calidad":
+          iconUrl = "/icons/poorqualityG.png";
+          break;
+        case "Huachicol":
+          iconUrl = "/icons/huachicolG.png";
+          break;
+        default:
+          iconUrl = "/icons/resolved.png";
+          break;
+      }
       break;
     case "En proceso de atención":
-      iconUrl = "/icons/in_progress.png";
+      switch (type){
+        case "Falta de agua":
+          iconUrl = "/icons/lackofwaterY.png";
+          break;
+        case "solicitud de pipa":
+          iconUrl = "/icons/waterpipeY-png";
+          break; 
+        case "Fuga":
+          iconUrl = "/icons/waterleakY.png";
+          break;
+        case "Falta de tapa en caja de valvula":
+          iconUrl = "/icons/valveY.png";
+          break;
+        case "Brote de aguas negras":
+          iconUrl = "/icons/sewageY.png";
+          break;
+        case "Coladera sin tapa":
+          iconUrl = "/icons/colanderwithoutlidY.png";
+          break;
+        case "Socavón":
+          iconUrl = "/icons/sinkholeG.png";
+          break;
+        case "Encharcamiento":
+          iconUrl = "/icons/floodY.png";
+          break;
+        case "Mala calidad":
+          iconUrl = "/icons/poorqualityY.png";
+          break;
+        case "Huachicol":
+          iconUrl = "/icons/huachicolY.png";
+          break;
+        default:
+          iconUrl = "/icons/in_progress.png";
+          break;
+      }
       break;
     case "Enviada a revisión":
-      iconUrl = "/icons/under_review.png";
+      switch (type){
+        case "Falta de agua":
+          iconUrl = "/icons/lackofwaterR.png";
+          break;
+        case "Solicitud de pipa":
+          iconUrl = "/icons/waterpipeR.png";
+          break;
+        case "Fuga":
+          iconUrl = "/icons/waterleakR.png";
+          break;
+        case "Falta de tapa en caja de valvula":
+          iconUrl = "/icons/valveR.png";
+          break;
+        case "Brote de aguas negras":
+          iconUrl = "/icons/sewageR.png";
+          break;
+        case "Coladera sin tapa":
+          iconUrl = "/icons/colanderwithoutlidR.png";
+          break;
+        case "Socavón":
+          iconUrl = "/icons/sinkholeR.png";
+          break;
+        case "Encharcamiento":
+          iconUrl = "/icons/floodR.png";
+          break;
+        case "Mala calidad":
+          iconUrl = "/icons/poorqualityR.png";
+          break;
+        case "Huachicol":
+          iconUrl = "/icons/huachicolR.png";
+          break;
+        default:
+          iconUrl = "/icons/under_review.png";
+          break;
+      }
       break;
   }
   return L.icon({
     iconUrl,
-    iconSize: [16, 16],
+    iconSize: [40, 40],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
   });
