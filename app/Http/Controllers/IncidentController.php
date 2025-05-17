@@ -8,14 +8,9 @@ use App\Models\Incident;
 use App\Http\Requests\StoreIncidentRequest;
 use App\Http\Requests\UpdateIncidentRequest;
 use App\Mail\AssignReviewer;
-use App\Mail\NewIncident;
-use App\Mail\SendIncident;
-use App\Models\Contact;
 use App\Models\Evidence;
-use App\Models\File;
 use App\Models\IncidentType;
 use App\Models\Location;
-use App\Models\Neighborhood;
 use App\Models\Report;
 use App\Models\User;
 use App\Services\IncidentService;
@@ -23,7 +18,6 @@ use App\Traits\Filterable;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Response;
@@ -117,7 +111,7 @@ class IncidentController extends Controller
         return Inertia::render("{$this->source}Index", [
             'title' => 'Control de incidencias',
             'routeName' => $this->routeName,
-            'incidents' =>  $incidents,
+            'incidents' => $incidents,
             'filters' => $filters
         ]);
     }
@@ -128,9 +122,9 @@ class IncidentController extends Controller
     public function create() // liston
     {
         return Inertia::render("{$this->source}Create", [
-            'title'          => 'Agregar incidencia',
-            'incidentTypes'  => IncidentType::where('status', true)->orderBy('name')->get(),
-            'routeName'      => $this->routeName,
+            'title' => 'Agregar incidencia',
+            'incidentTypes' => IncidentType::where('status', true)->orderBy('name')->get(),
+            'routeName' => $this->routeName,
         ]);
     }
 
@@ -165,9 +159,9 @@ class IncidentController extends Controller
     public function show(Incident $incident)
     {
         return Inertia::render("{$this->source}Show", [
-            'title'         => 'Revisar incidencia',
-            'incident'      => $incident->load('location.neighborhood.city', 'incidentType', 'incidentStatus', 'files', 'evidence.files'),
-            'routeName'     => $this->routeName,
+            'title' => 'Revisar incidencia',
+            'incident' => $incident->load('location.neighborhood.city', 'incidentType', 'incidentStatus', 'files', 'evidence.files'),
+            'routeName' => $this->routeName,
         ]);
     }
 
@@ -200,10 +194,10 @@ class IncidentController extends Controller
         $this->authorize('assign', $incident);
 
         return Inertia::render("{$this->source}Assign", [
-            'title'         => 'Asignar revisor a incidencia',
-            'users'         => User::with('roles', 'file')->orderBy('name')->get(),
-            'incident'      => $incident->load('location.neighborhood.city', 'incidentType', 'incidentStatus', 'files'),
-            'routeName'     => $this->routeName,
+            'title' => 'Asignar revisor a incidencia',
+            'users' => User::with('roles', 'file')->orderBy('name')->get(),
+            'incident' => $incident->load('location.neighborhood.city', 'incidentType', 'incidentStatus', 'files'),
+            'routeName' => $this->routeName,
         ]);
     }
 
@@ -228,4 +222,5 @@ class IncidentController extends Controller
         $this->incidentService->storeFileEvidence($request, $evidence);
         return redirect()->back()->with('success', 'Evidencia guardada con éxito');
     }
+
 }

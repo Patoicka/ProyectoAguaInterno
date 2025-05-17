@@ -59,6 +59,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/graphic.index', function () {
         return Inertia::render('Visualizations/BarStacked');
     })->name('graphic.index');
+    Route::get('/incidentMap', function () { return Inertia::render('Visualizations/IncidentMap'); })->name('incident/Map');
+    Route::get('/incident-graph', function () { return Inertia::render('Visualizations/IncidentGraph'); })->name('incident.graph');
+    
 });
-
 require __DIR__ . '/auth.php';

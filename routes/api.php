@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LocationController;
 use Illuminate\Http\Request;
@@ -38,3 +40,11 @@ Route::get('get-location-neighborhood/{neighborhoodId}', [LocationController::cl
 
 Route::get('/map/incidents', [IncidentMapController::class, 'index']);
 Route::get('/grafico/incidencias', [IncidentGraphController::class, 'getIncidents']);
+Route::get('/showIncident', [DashboardController::class, 'chartIncident'])->name('incident.showIncident')->withoutMiddleware(['auth', 'api']);
+Route::get('/available-incident-filters', [DashboardController::class, 'getAvailableFilters'])->name('incident.available-filters')->withoutMiddleware(['auth', 'api']);
+//Route::get('/dashboard/incidencias/export-pdf',[DashboardController::class, 'exportPorAnio'])->name('incident.exportPdf')->withoutMiddleware(['auth', 'api','can:incident.index']);
+Route::get(
+    '/dashboard/incidencias/export-pdf',
+    [DashboardController::class, 'exportPdf']
+)->name('incident.exportPdf')
+    ->withoutMiddleware(['auth', 'api', 'can:incident.index']);
