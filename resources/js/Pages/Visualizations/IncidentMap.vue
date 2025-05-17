@@ -65,7 +65,7 @@ const initMap = () => {
   ];
 
   map = L.map("map", {
-    minZoom: 6,
+    minZoom: 8,
     maxBounds: mexicoBounds,
     maxBoundsViscosity: 1.0,
   }).setView([19.35, -99.75], 9);
