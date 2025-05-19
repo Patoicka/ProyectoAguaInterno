@@ -115,7 +115,7 @@ const getLocationByState = (stateId) => {
     neighborhoods.value = null;
     form.neighborhood_id = null;
     form.postal_code = null;
-    axios.get(route('${routeNameLocation}getLocationByState', stateId))
+    axios.get(route(`${routeNameLocation}getLocationByState`, stateId))
         .then(response => {
             if (response.status === 200) {
                 const data = response.data

@@ -27,6 +27,7 @@ class IncidentMapController extends Controller
                     'municipality' => $incident->location->neighborhood->city->name ?? null,
                     'lat' => $incident->location?->lat,
                     'lng' => $incident->location?->lng,
+                    'created_at' => $incident->created_at ? $incident->created_at->format('Y-m-d') : null,
                 ];
             });
 
