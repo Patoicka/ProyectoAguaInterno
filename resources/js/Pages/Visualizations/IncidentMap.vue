@@ -35,6 +35,8 @@ const filtros = ref({
   municipality: "Todos",
   problematic: "Todos",
   status: "Todos",
+  startDate: null,
+  endDate: null,
 });
 
 watch(
@@ -45,14 +47,22 @@ watch(
   { deep: true }
 );
 
+const showNoResults = ref(false);
+
 const aplicarFiltros = () => {
   incidenciasFiltradas.value = todasLasIncidencias.value.filter((item) => {
     return (
       (filtros.value.municipality === "Todos" || item.municipio === filtros.value.municipality) &&
       (filtros.value.problematic === "Todos" || item.tipo === filtros.value.problematic) &&
-      (filtros.value.status === "Todos" || item.estatus === filtros.value.status)
+      (filtros.value.status === "Todos" || item.estatus === filtros.value.status) &&
+      (!filtros.value.startDate || item.fecha >= filtros.value.startDate) &&
+      (!filtros.value.endDate || item.fecha <= filtros.value.endDate)
     );
   });
+
+  showNoResults.value =
+    incidenciasFiltradas.value.length === 0 &&
+    (filtros.value.startDate || filtros.value.endDate || filtros.value.municipality !== "Todos" || filtros.value.problematic !== "Todos" || filtros.value.status !== "Todos");
 
   renderMarkers();
 };
@@ -115,7 +125,8 @@ const renderMarkers = () => {
     const tipo = capitalizeFirstLetter(i.tipo);
     const estatus = capitalizeFirstLetter(i.estatus);
     const municipio = capitalizeFirstLetter(i.municipio);
-    const descripcion = capitalizeFirstLetter(i.descripcion);
+    const descripcion = (i.descripcion.charAt(0).toUpperCase() + i.descripcion.slice(1).toLowerCase() || "Descripción no disponible");
+    const fecha = (i.fecha || "Fecha no disponible").split("T")[0];
 
     popUpContent = `
       <div class="text-sm font-medium text-gray-800 space-y-1">
@@ -130,8 +141,21 @@ const renderMarkers = () => {
           <label class="font-semibold m-0">Descripción: </label>
           <label class="m-0">${descripcion}</label>
         </div>
+        <div class="pb-3 text-gray-600 text-justify">
+          <label class="font-semibold m-0">Fecha de Creación: </label>
+          <label class="m-0">${fecha}</label>
+        </div>
         <div class="p-2 rounded-lg ${color} text-white text-center mt-2">
           <strong>${estatus}</strong>
+        </div>
+        <div class="p-2 rounded-lg text-white text-center mt-2 w-full">
+        <div class="p-2 rounded-lg text-white text-center mt-2 w-full">
+          <button style="width: 100%;"
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2"
+                onclick="window.location.href='incident/${i.id}'">
+              Ver detalle
+          </button>
+        </div>
         </div>
     </div>
   `;
@@ -180,6 +204,7 @@ const cargarIncidencias = async () => {
         municipio: incidente.municipality,
         lat: parseFloat(incidente.lat),
         lng: parseFloat(incidente.lng),
+        fecha: incidente.created_at,
       };
     });
 
@@ -226,8 +251,18 @@ onMounted(() => {
               :options="statusOptions" v-model="filtros.status" />
           </FormField>
 
-        </div>
+          <FormField class="order-2 sm:order-1 sm:mx-4" label="Fecha de inicio">
+            <FormControl type="date" v-model="filtros.startDate"/>
+          </FormField>
 
+          <FormField class="order-2 sm:order-1" label="Fecha final">
+            <FormControl type="date" v-model="filtros.endDate" :min="filtros.startDate" />
+          </FormField>
+
+        </div>
+        <div v-if="showNoResults" class="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded">
+          No se encontraron incidencias para los filtros seleccionados.
+        </div>
         <div id="map" class="w-full h-[600px] rounded shadow"></div>
       </div>
     </CardBox>
