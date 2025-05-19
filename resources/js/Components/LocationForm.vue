@@ -5,19 +5,100 @@ import FormControl from "@/Components/FormControl.vue";
 import Loading from "vue-loading-overlay";
 import "vue-loading-overlay/dist/css/index.css";
 import Swal from "sweetalert2";
-import LocationMap from "./LocationMap.vue";
-import { useIncidentStore } from "@/stores/incidents";
 
 import axios from "axios";
-import { inject, onMounted, ref, nextTick} from 'vue';
-import { mdiMagnify, mdiMapMarkerAccount } from "@mdi/js";
+import { inject, onMounted, ref } from 'vue';
+import { mdiMagnify } from "@mdi/js";
+
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { nextTick } from 'vue';
+
+
+const showMap = ref(false);
+const lat = ref(null);
+const lng = ref(null);
+let map = null;
+let marker = null;
+
+const toggleMap = async () => {
+    showMap.value = !showMap.value;
+    if (showMap.value) {
+        await nextTick(); // Esperar a que el DOM renderice el div del mapa
+     await initializeMap();   // esperamos a que termine
+    }
+};
+
+const initializeMap = async () => {
+  // 1) Construir valores separados
+  const streetAndNumber = `${form.street} ${form.exterior_number}`;
+  const cityName        = cities.value.find(c => c.id === form.city_id)?.name;
+  const countyName      = cityName;
+  let   stateName       = states.find(s => s.id === form.state_id)?.name;
+  if (stateName === "México") stateName = "Estado de México";
+  const postal          = form.postal_code;
+  const country         = "Mexico";
+
+  // 2) Parametrizar
+  const params = {
+    street:     streetAndNumber,
+    city:       cityName,
+    county:     countyName,
+    state:      stateName,
+    postalcode: postal,
+    country:    country,
+    format:     'json',
+    limit:      1
+  };
+  console.log('Params Nominatim:', params);
+
+  // 3) Petición
+  let result;
+  try {
+    const response = await axios.get(
+      'https://nominatim.openstreetmap.org/search',
+      { params }
+    );
+    console.log('Nominatim respondió:', response.data);
+    result = response.data[0];
+  } catch (e) {
+    console.warn('Error geocodificando:', e);
+  }
+
+  // 4) Fallback si no hay resultado
+  if (result) {
+    lat.value = parseFloat(result.lat);
+    lng.value = parseFloat(result.lon);
+  } else {
+    lat.value = 19.4326;
+    lng.value = -99.1332;
+  }
+
+  // 5) Renderizar o recenterizar mapa
+  if (map) map.remove();
+  map = L.map('map').setView([lat.value, lng.value], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 6) Marcador draggable
+  marker = L.marker([lat.value, lng.value], { draggable: true }).addTo(map);
+  marker.on('dragend', () => {
+    const pos = marker.getLatLng();
+    lat.value = pos.lat.toFixed(6);
+    lng.value = pos.lng.toFixed(6);
+  });
+};
+
+
+
 
 const props = defineProps({
     isShow: { type: Boolean, default: false },
     streetIsRequired: { type: Boolean, default: false },
     hasNumbers: { type: Boolean, default: true },
     exteriorIsRequired: { type: Boolean, default: false },
-    referencesIsRequired: { type: Boolean, default: false }, 
+    referencesIsRequired: { type: Boolean, default: false }
 })
 
 const isLoading = ref(false);
@@ -25,8 +106,6 @@ const form = inject('form');
 const cities = ref([]);
 const neighborhoods = ref([]);
 const routeNameLocation = 'location.';
-//const showMap = ref(false); 
-const incidentStore = useIncidentStore();
 
 const states = [
     { id: 1, name: "Aguascalientes" },
@@ -77,12 +156,6 @@ const cleanForm = () => {
     neighborhoods.value = [];
 };
 
-function updateLocation(data) {
-    form.lat = data.lat;
-    form.lng = data.lng; 
-    form.street = data.street;
-}
-
 const getLocationByPostalCode = async (postalCode) => {
     isLoading.value = true;
     try {
@@ -121,7 +194,6 @@ const getLocationByState = (stateId) => {
                 const data = response.data
                 cities.value = data.cities;
                 form.city_id = data.cities[0]?.id ?? null;
-                form.city_name = data.cities[0]?.name ?? data.cities[0]?.name ?? "";
             }
         })
         .catch(error => {
@@ -139,32 +211,6 @@ const getLocationByCity = (cityId) => {
     axios.get(route(`${routeNameLocation}getLocationByCity`, cityId))
         .then(response => {
             if (response.status === 200) {
-                const data = response.data;
-                neighborhoods.value = data.neighborhoods;
-                
-                // Antes asignabas solo el ID, ahora aseguramos el nombre
-                form.neighborhood_id = data.neighborhoods[0]?.name ?? null;
-
-                form.neighborhood_name = data.neighborhoods.name ?? null; //  Agregamos esta línea
-                form.postal_code = data.neighborhoods[0]?.postal_code ?? null;
-
-            }
-        })
-        .catch(error => {
-            Swal.fire({
-                title: '¡Error!',
-                text: 'Error al obtener las colonias, intente nuevamente más tarde',
-                icon: 'error',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Ok',
-            });
-        });
-};
-
-/*const getLocationByCity = (cityId) => {
-    axios.get(route('${routeNameLocation}getLocationByCity', cityId))
-        .then(response => {
-            if (response.status === 200) {
                 const data = response.data
                 neighborhoods.value = data.neighborhoods;
                 form.neighborhood_id = data.neighborhoods[0]?.id ?? null;
@@ -180,7 +226,7 @@ const getLocationByCity = (cityId) => {
                 confirmButtonText: 'Ok',
             });
         });
-};*/
+};
 
 const getLocationByNeighborhood = (neighborhoodId) => {
     axios.get(route(`${routeNameLocation}getLocationByNeighborhood`, neighborhoodId))
@@ -212,88 +258,87 @@ onMounted(() => {
         getLocationByPostalCode(form.postal_code);
     }
 });
-
-/*const closeMap = async () => { 
- 
-  showMap.value = false;
-};*/
-
-
-//subebebebebebe
 </script>
 
 <template>
-    <div class="flex flex-col gap-5 mt-10">
-      <div class="flex flex-col md:flex-row md:items-center gap-4">
-        <FormField label="Código postal:" :error="form?.errors?.postal_code">
-          <FormControl :disabled="isShow" placeholder="Código postal" type="text" min=""
-            @keyup.enter="getLocationByPostalCode(form.postal_code)" v-model="form.postal_code" />
-
-        </FormField>
-  
-        <div class="flex flex-col md:flex-row gap-2">
-          <BaseButton class="w-full md:w-auto h-12" :disabled="isShow" label="Buscar" color="info" :icon="mdiMagnify"
-            @click="getLocationByPostalCode(form.postal_code)" />
-           <!-- <BaseButton class="w-full md:w-auto h-12" label="Confirmar mi ubicación" color="info" :icon="mdiMapMarkerAccount"
-            @click="showMap = true" /> -->
-          <BaseButton :disabled="isShow" class="w-full md:w-auto h-12" label="Limpiar" color="contrast"
-            @click="cleanForm()" />
+    <div class="mb-5 flex flex-col lg:flex-row">
+        <div class="">
+            <FormField label="Código postal:" :error="form?.errors?.postal_code">
+                <FormControl :disabled="isShow" placeholder="Código postal" type="number"
+                    @keyup.enter="getLocationByPostalCode(form.postal_code)" v-model="form.postal_code" />
+            </FormField>
         </div>
-      </div>
-  
-      <LocationMap   class=" w-full max-w-8xl"
-        :postalCode="form.postal_code" :state="form.state_id" :municipality="form.city_id"
-        :neighborhood="form.neighborhood_id" @location-selected="updateLocation" />
-  
-      <FormField label="Latitud:" class="hidden">
-        <FormControl v-model="form.lat" readonly onmousedown="return false;" placeholder="Latitud" />
-      </FormField>
-  
-      <FormField label="Longitud:" class="hidden">
-        <FormControl v-model="form.lng" readonly onmousedown="return false;" placeholder="Longitud" />
-      </FormField>
-  
-      <FormField label="Estado:" :error="form?.errors?.state_id">
-        <FormControl :disabled="isShow" v-model="form.state_id" :options="states"
-          @change="getLocationByState(form.state_id)" />
-      </FormField>
-  
-      <FormField label="Municipio:" :error="form?.errors?.city_id">
-        <FormControl :disabled="isShow" v-model="form.city_id" :options="cities"
-          @change="getLocationByCity(form.city_id)" />
-      </FormField>
-  
-      <FormField required label="Colonia:" :error="form?.errors?.neighborhood_id">
-        <FormControl :disabled="isShow" type="select" v-model="form.neighborhood_id" :options="neighborhoods"
-          @change="getLocationByNeighborhood(form.neighborhood_id)" />
-      </FormField>
-  
-      <FormField required label="Calle:" :error="form?.errors?.street" :required="streetIsRequired">
-        <FormControl :disabled="isShow" @input="convertToUpperCase('street')" v-model="form.street" placeholder="Calle" />
-      </FormField>
-  
-      <div v-if="hasNumbers" class="flex flex-col md:flex-row gap-4">
-        <FormField required label="Número interior:" :error="form?.errors?.interior_number">
-          <FormControl :disabled="isShow" v-model="form.interior_number" placeholder="Número interior" maxlength="50" />
-        </FormField>
-        <FormField required label="Número exterior:" :error="form?.errors?.exterior_number">
-          <FormControl :disabled="isShow" v-model="form.exterior_number" placeholder="Número exterior" maxlength="50" />
-        </FormField>
-      </div>
-  
-      <FormField required label="Manzana/Lote/Solar:" :error="form?.errors?.additional">
-        <FormControl :disabled="isShow" height="h-14" @input="convertToUpperCase('additional')" v-model="form.additional"
-          placeholder="Ingresa Manzana/Lote/Solar" />
-      </FormField>
-  
-      <FormField required label="Referencias:" :error="form?.errors?.references" :required="referencesIsRequired">
-        <FormControl :disabled="isShow" type="textarea" height="h-24" @input="convertToUpperCase('references')"
-          v-model="form.references" placeholder="Descripción del sitio" />
-      </FormField>
-  
-      <div class="vl-parent">
-        <loading v-model:active="isLoading" :can-cancel="false" :is-full-page="true" />
-      </div>
+
+        <div class="mt-5 flex gap-1 lg:flex-row lg:mt-8 lg:ml-2">
+            <BaseButton class="w-full lg:w-auto h-12" :disabled="isShow" label="Buscar" color="info" :icon="mdiMagnify"
+                @click="getLocationByPostalCode(form.postal_code)" />
+            <BaseButton :disabled="isShow" class="w-full lg:w-auto h-12" label="Limpiar" color="contrast" @click="cleanForm()" />
+        </div>
     </div>
-  </template>
-  
+
+    <div class="mb-5">
+        <FormField label="Estado:" :error="form?.errors?.state_id">
+            <FormControl :disabled="isShow" v-model="form.state_id" :options="states" @change="getLocationByState(form.state_id)" />
+        </FormField>
+    </div>
+
+    <div class="mb-5">
+        <FormField label="Municipio:" :error="form?.errors?.city_id">
+            <FormControl :disabled="isShow" v-model="form.city_id" :options="cities" @change="getLocationByCity(form.city_id)" />
+        </FormField>
+    </div>
+
+    <FormField required label="Colonia:" :error="form?.errors?.neighborhood_id">
+        <FormControl :disabled="isShow" type="select" v-model="form.neighborhood_id" :options="neighborhoods"
+            @change="getLocationByNeighborhood(form.neighborhood_id)" />
+    </FormField>
+
+    <FormField required label="Calle:" :error="form?.errors?.street" :required="streetIsRequired">
+        <FormControl :disabled="isShow" @input="convertToUpperCase('street')" v-model="form.street" placeholder="Calle" />
+    </FormField>
+
+    <div v-if="hasNumbers" class="md:flex mb-5 md:space-x-4">
+        <div class="md:w-1/2 max-lg:mb-5">
+            <FormField required label="Número interior:" :error="form?.errors?.interior_number">
+                <FormControl :disabled="isShow" v-model="form.interior_number" placeholder="Número interior" maxlength="50" />
+            </FormField>
+        </div>
+        <div class="md:w-1/2">
+            <FormField required label="Número exterior:" :error="form?.errors?.exterior_number">
+                <FormControl :disabled="isShow" v-model="form.exterior_number" placeholder="Número exterior" maxlength="50" />
+            </FormField>
+        </div>
+    </div>
+    <FormField required label="Manzana/Lote/Solar:" :error="form?.errors?.additional">
+        <FormControl :disabled="isShow" height="h-14" @input="convertToUpperCase('additional')" v-model="form.additional"
+            placeholder="Ingresa Manzana/Lote/Solar" />
+    </FormField>
+    <FormField required label="Referencias:" :error="form?.errors?.references" :required="referencesIsRequired">
+        <FormControl :disabled="isShow" type="textarea" height="h-24" @input="convertToUpperCase('references')" v-model="form.references"
+            placeholder="Descripción del sitio" />
+    </FormField>
+ <!-- Botón para mostrar el mapa -->
+<div class="mb-4">
+  <button
+    @click="toggleMap"
+    class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
+  >
+    Ver Ubicación
+  </button>
+</div>
+
+<!-- Contenedor del mapa -->
+<div v-show="showMap" id="map" class="w-full h-96 mb-4 rounded shadow"></div>
+
+<!-- Coordenadas visibles -->
+<div v-show="showMap" class="text-lg text-white font-semibold bg-black bg-opacity-50 p-4 rounded shadow-md">
+  <p>Latitud: {{ lat }}</p>
+  <p>Longitud: {{ lng }}</p>
+</div>
+
+    <div class="vl-parent">
+        <loading v-model:active="isLoading" :can-cancel="false" :is-full-page="true" />
+    </div>
+</template>
+
+//este funciona

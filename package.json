@@ -52,6 +52,7 @@
         "vue-loading-overlay": "^6.0.4",
         "vue-select": "^4.0.0-beta.6",
         "vue2-editor": "^2.10.3",
+        "wellknown": "^0.5.0",
         "xlsx": "^0.18.5"
     }
 }

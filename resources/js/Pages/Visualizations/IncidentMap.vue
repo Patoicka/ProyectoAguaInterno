@@ -11,6 +11,7 @@ import CardBox from "@/Components/CardBox.vue";
 import FormField from "@/Components/FormField.vue";
 import FormControl from "@/Components/FormControl.vue";
 import axios from "axios";
+import wellknown from "wellknown";
 
 let map;
 let markersLayer = null;
@@ -18,7 +19,7 @@ let markersLayer = null;
 const problematicsOptions = [
   "Todos", "Falta de agua", "Solicitud de pipa", "Fuga",
   "Falta de tapa en caja de valvula", "Brote de aguas negras", "Coladera sin tapa",
-  "Socavón", "Encharcamiento", "mala calidad", "Huachicol"
+  "Socavón", "Encharcamiento", "Mala calidad", "Huachicol", "Mal uso"
 ];
 
 const statusOptions = [
@@ -49,12 +50,19 @@ watch(
 
 const showNoResults = ref(false);
 
+const normalize = (str) =>
+  (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
 const aplicarFiltros = () => {
   incidenciasFiltradas.value = todasLasIncidencias.value.filter((item) => {
     return (
-      (filtros.value.municipality === "Todos" || item.municipio === filtros.value.municipality) &&
-      (filtros.value.problematic === "Todos" || item.tipo === filtros.value.problematic) &&
-      (filtros.value.status === "Todos" || item.estatus === filtros.value.status) &&
+      (filtros.value.municipality === "Todos" || normalize(item.municipio) === normalize(filtros.value.municipality)) &&
+      (filtros.value.problematic === "Todos" || normalize(item.tipo) === normalize(filtros.value.problematic)) &&
+      (filtros.value.status === "Todos" || normalize(item.estatus) === normalize(filtros.value.status)) &&
       (!filtros.value.startDate || item.fecha >= filtros.value.startDate) &&
       (!filtros.value.endDate || item.fecha <= filtros.value.endDate)
     );
@@ -74,7 +82,7 @@ const initMap = () => {
   ];
 
   map = L.map("map", {
-    minZoom: 6,
+    minZoom: 8,
     maxBounds: mexicoBounds,
     maxBoundsViscosity: 1.0,
   }).setView([19.35, -99.75], 9);
@@ -83,13 +91,39 @@ const initMap = () => {
     "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
   ).addTo(map);
 
-  fetch("assets/mexico.geojson")
-    .then((Response) => Response.json())
+  fetch("assets/geojson/mexico.json")
+    .then((res) => res.json())
     .then((data) => {
-      L.geoJSON(data, {
-        style: { color: "blue", weight: 1, opacity: 1, fillOpacity: 0.1 },
-      }).addTo(map);
+      data.forEach((item) => {
+        const geometry = wellknown(item.poligono);
+        if (!geometry) {
+          console.warn("No se pudo convertir el polígono de:", item.municipio);
+          return;
+        }
+
+        const feature = {
+          type: "Feature",
+          properties: {
+            municipio: item.municipio,
+          },
+          geometry: geometry,
+        };
+
+        const layer = L.geoJSON(feature, {
+          style: {
+            color: "blue",
+            weight: 1,
+            fillOpacity: 0.1,
+          },
+        });
+
+        layer.addTo(map);
+      });
+    })
+    .catch((error) => {
+      console.error("Error al cargar geojson:", error);
     });
+
 
   aplicarFiltros();
 };
@@ -106,7 +140,6 @@ const renderMarkers = () => {
     let color;
     let popUpContent;
 
-    // Función para capitalizar la primera letra de cada palabra
     const capitalizeFirstLetter = (string) => {
       return string
         .toLowerCase()
@@ -149,42 +182,59 @@ const renderMarkers = () => {
           <strong>${estatus}</strong>
         </div>
         <div class="p-2 rounded-lg text-white text-center mt-2 w-full">
-        <div class="p-2 rounded-lg text-white text-center mt-2 w-full">
           <button style="width: 100%;"
               class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2"
                 onclick="window.location.href='incident/${i.id}'">
               Ver detalle
           </button>
         </div>
-        </div>
     </div>
   `;
 
     L.marker([i.lat, i.lng], {
-      icon: getIconByStatus(i.estatus),
+      icon: getIconByStatus(i.estatus, i.tipo),
     })
       .addTo(markersLayer)
       .bindPopup(popUpContent);
   });
 };
 
-const getIconByStatus = (status) => {
-  let iconUrl;
+const iconMap = {
+  "Falta de agua": "lackofwater",
+  "Solicitud de pipa": "waterpipe",
+  "Fuga": "waterleak",
+  "Falta de tapa en caja de valvula": "valve",
+  "Brote de aguas negras": "sewage",
+  "Coladera sin tapa": "colanderwithoutlid",
+  "Socavón": "sinkhole",
+  "Encharcamiento": "flood",
+  "Mala calidad": "poorquality",
+  "Huachicol": "huachicol",
+};
 
-  switch (status) {
-    case "Incidencia resuelta":
-      iconUrl = "/icons/resolved.png";
-      break;
-    case "En proceso de atención":
-      iconUrl = "/icons/in_progress.png";
-      break;
-    case "Enviada a revisión":
-      iconUrl = "/icons/under_review.png";
-      break;
-  }
+const statusSuffixMap = {
+  "Incidencia resuelta": "G",
+  "En proceso de atención": "Y",
+  "Enviada a revisión": "R",
+};
+
+const defaultIcons = {
+  "Incidencia resuelta": "/icons/resolved.png",
+  "En proceso de atención": "/icons/in_progress.png",
+  "Enviada a revisión": "/icons/under_review.png",
+};
+
+const getIconByStatus = (status, type) => {
+  const baseName = iconMap[type];
+  const suffix = statusSuffixMap[status];
+
+  const iconUrl = baseName
+    ? `/icons/${baseName}${suffix}.png`
+    : defaultIcons[status] || "/icons/default.png";
+
   return L.icon({
     iconUrl,
-    iconSize: [16, 16],
+    iconSize: [30, 30],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
   });
@@ -252,7 +302,7 @@ onMounted(() => {
           </FormField>
 
           <FormField class="order-2 sm:order-1 sm:mx-4" label="Fecha de inicio">
-            <FormControl type="date" v-model="filtros.startDate"/>
+            <FormControl type="date" v-model="filtros.startDate" />
           </FormField>
 
           <FormField class="order-2 sm:order-1" label="Fecha final">
