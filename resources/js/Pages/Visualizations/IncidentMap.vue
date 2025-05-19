@@ -143,23 +143,28 @@ const renderMarkers = () => {
     const descripcion = capitalizeFirstLetter(i.descripcion);
 
     popUpContent = `
-      <div class="text-sm font-medium text-gray-800 space-y-1">
-        <div class="text-xl font-bold">
-          ${tipo}
-        </div>
-        <div class="py-2 text-gray-600">
-          <label class="font-semibold m-0">Lugar: </label>
-          <label class="m-0">${municipio}</label>
-        </div>
-        <div class="pb-3 text-gray-600 text-justify">
-          <label class="font-semibold m-0">Descripción: </label>
-          <label class="m-0">${descripcion}</label>
-        </div>
-        <div class="p-2 rounded-lg ${color} text-white text-center mt-2">
-          <strong>${estatus}</strong>
-        </div>
+  <div class="text-sm font-medium text-gray-800 space-y-1">
+    <div class="text-xl font-bold">
+      ${tipo}
     </div>
-  `;
+    <div class="py-2 text-gray-600">
+      <label class="font-semibold m-0">Lugar: </label>
+      <label class="m-0">${municipio}</label>
+    </div>
+    <div class="pb-3 text-gray-600 text-justify">
+      <label class="font-semibold m-0">Descripción: </label>
+      <label class="m-0">${descripcion}</label>
+    </div>
+    <div class="p-2 rounded-lg ${color} text-white text-center mt-2">
+      <strong>${estatus}</strong>
+    </div>
+    <button style="width: 100%;"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2"
+            onclick="window.location.href='http://127.0.0.1:8000/incident/${i.id}'">
+      Ver detalle
+    </button>
+  </div>
+`;
 
     L.marker([i.lat, i.lng], {
       icon: getIconByStatus(i.estatus, i.tipo),
