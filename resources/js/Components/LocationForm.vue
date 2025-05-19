@@ -10,6 +10,89 @@ import axios from "axios";
 import { inject, onMounted, ref } from 'vue';
 import { mdiMagnify } from "@mdi/js";
 
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { nextTick } from 'vue';
+
+
+const showMap = ref(false);
+const lat = ref(null);
+const lng = ref(null);
+let map = null;
+let marker = null;
+
+const toggleMap = async () => {
+    showMap.value = !showMap.value;
+    if (showMap.value) {
+        await nextTick(); // Esperar a que el DOM renderice el div del mapa
+     await initializeMap();   // esperamos a que termine
+    }
+};
+
+const initializeMap = async () => {
+  // 1) Construir valores separados
+  const streetAndNumber = `${form.street} ${form.exterior_number}`;
+  const cityName        = cities.value.find(c => c.id === form.city_id)?.name;
+  const countyName      = cityName;
+  let   stateName       = states.find(s => s.id === form.state_id)?.name;
+  if (stateName === "México") stateName = "Estado de México";
+  const postal          = form.postal_code;
+  const country         = "Mexico";
+
+  // 2) Parametrizar
+  const params = {
+    street:     streetAndNumber,
+    city:       cityName,
+    county:     countyName,
+    state:      stateName,
+    postalcode: postal,
+    country:    country,
+    format:     'json',
+    limit:      1
+  };
+  console.log('Params Nominatim:', params);
+
+  // 3) Petición
+  let result;
+  try {
+    const response = await axios.get(
+      'https://nominatim.openstreetmap.org/search',
+      { params }
+    );
+    console.log('Nominatim respondió:', response.data);
+    result = response.data[0];
+  } catch (e) {
+    console.warn('Error geocodificando:', e);
+  }
+
+  // 4) Fallback si no hay resultado
+  if (result) {
+    lat.value = parseFloat(result.lat);
+    lng.value = parseFloat(result.lon);
+  } else {
+    lat.value = 19.4326;
+    lng.value = -99.1332;
+  }
+
+  // 5) Renderizar o recenterizar mapa
+  if (map) map.remove();
+  map = L.map('map').setView([lat.value, lng.value], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 6) Marcador draggable
+  marker = L.marker([lat.value, lng.value], { draggable: true }).addTo(map);
+  marker.on('dragend', () => {
+    const pos = marker.getLatLng();
+    lat.value = pos.lat.toFixed(6);
+    lng.value = pos.lng.toFixed(6);
+  });
+};
+
+
+
+
 const props = defineProps({
     isShow: { type: Boolean, default: false },
     streetIsRequired: { type: Boolean, default: false },
@@ -234,8 +317,28 @@ onMounted(() => {
         <FormControl :disabled="isShow" type="textarea" height="h-24" @input="convertToUpperCase('references')" v-model="form.references"
             placeholder="Descripción del sitio" />
     </FormField>
+ <!-- Botón para mostrar el mapa -->
+<div class="mb-4">
+  <button
+    @click="toggleMap"
+    class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
+  >
+    Ver Ubicación
+  </button>
+</div>
+
+<!-- Contenedor del mapa -->
+<div v-show="showMap" id="map" class="w-full h-96 mb-4 rounded shadow"></div>
+
+<!-- Coordenadas visibles -->
+<div v-show="showMap" class="text-lg text-white font-semibold bg-black bg-opacity-50 p-4 rounded shadow-md">
+  <p>Latitud: {{ lat }}</p>
+  <p>Longitud: {{ lng }}</p>
+</div>
 
     <div class="vl-parent">
         <loading v-model:active="isLoading" :can-cancel="false" :is-full-page="true" />
     </div>
 </template>
+
+//este funciona
