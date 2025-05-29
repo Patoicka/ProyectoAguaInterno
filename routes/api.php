@@ -42,3 +42,19 @@ Route::get(
     [DashboardController::class, 'exportPdf']
 )->name('incident.exportPdf')
     ->withoutMiddleware(['auth', 'api', 'can:incident.index']);
+Route::get(
+    'dynamic-report',                               // ← sin slash inicial
+    [App\Http\Controllers\DashboardController::class, 'dynamicExportPdf']
+)->name('dynamic.report')                                  // nombre interno opcional
+    ->withoutMiddleware(['auth', 'api']);
+Route::get(
+    'table-columns',
+    [App\Http\Controllers\DashboardController::class, 'tableColumns']
+)->name('dynamic.table-columns')
+    ->withoutMiddleware(['auth', 'api']);
+Route::get(
+    'table-list',
+    [App\Http\Controllers\DashboardController::class, 'tableList']
+)->name('dynamic.table-list')
+    ->withoutMiddleware(['auth', 'api']);
+Route::get('dynamic-search',  [DashboardController::class, 'dynamicSearch'])->name('dynamic.search')->withoutMiddleware(['auth', 'api']);

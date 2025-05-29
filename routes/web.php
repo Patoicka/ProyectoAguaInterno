@@ -26,6 +26,7 @@ use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 | contains the "web" middleware group. Now create something great!
 |
 */
+
 Route::get('/', [WelcomeController::class, 'welcome'])->name('welcome');
 Route::get('/welcome/incident/create', [WelcomeController::class, 'createIncidet'])->name('welcome.create.incidet');
 Route::post('/welcome/incident/store', [WelcomeController::class, 'storeIncidet'])->name('welcome.store.incidet');
@@ -52,8 +53,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('incident-assigned/{incident}', [IncidentController::class, 'assigned'])->name('incident.assigned');
     Route::post('incident-evidenced/{incident}', [IncidentController::class, 'evidenced'])->name('incident.evidenced');
 
-    Route::get('/incidentMap', function () { return Inertia::render('Visualizations/IncidentMap'); })->name('incident/Map');
-    Route::get('/incident-graph', function () { return Inertia::render('Visualizations/IncidentGraph'); })->name('incident.graph');
-    
+    Route::get('/incidentMap', function () {
+        return Inertia::render('Visualizations/IncidentMap');
+    })->name('incident/Map');
+    Route::get('/incident-graph', function () {
+        return Inertia::render('Visualizations/IncidentGraph');
+    })->name('incident.graph');
+    Route::get(
+        '/api/incident-chart',               // URI que ya existe en api.php
+        [DashboardController::class, 'chartIncident']
+    )->name('incident.chart');                      // ← NOMBRE que usa Vue
+
+    Route::get(
+        '/api/available-incident-filters',   // URI ya existente
+        [DashboardController::class, 'getAvailableFilters']
+    )->name('incident.available-filters');          // ← lo usa Vue
+
+    Route::get(
+        '/api/dashboard/incidencias/export-pdf', // URI ya existente
+        [DashboardController::class, 'exportPdf']
+    )->name('incident.exportPdf');
+    Route::get('/dynamic-search', fn() => Inertia::render('Visualizations/DynamicSearch'));
+    Route::get(
+        '/api/dynamic-filters',
+        [DashboardController::class, 'dynamicAvailableFilters']
+    )->name('dynamic.filters')->middleware(['auth']);
 });
 require __DIR__ . '/auth.php';
