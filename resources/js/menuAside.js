@@ -22,6 +22,7 @@ import {
     mdiTelevisionGuide,
     mdiMapMarkerAlertOutline,
     mdiChartBarStacked,
+    mdiTableCog
 } from "@mdi/js";
 // import Icon from '@mdi/react';
 
@@ -84,46 +85,51 @@ export default [
         icon: mdiFire,
         permission: "incident.index",
     },
-    
+
     {
         label: "Visualización",
         icon: mdiTelevisionGuide,
         menu: [
-          {
-            label: "Mapa de incidencias",
-            route: "incident/Map",
-            icon: mdiMapMarkerAlertOutline,
-          },
-          {
-            label: "Gráfico de incidencias",
-            route: "graphic.index",
-            icon: mdiChartBarStacked,
-          },
-          {
-            label: "Ver Incidencias",
-            route: "incidents.view",
-            icon: mdiFire,
-        },
-        {
-            label: "Por Municipio",
-            route: "incidents.byMunicipality",
-            icon: mdiCity,
-        },
-        {
-            label: "Por Tipo",
-            route: "incidents.byType",
-            icon: mdiTag,
-        },
-        {
-            label: "Por Estatus",
-            route: "incidents.byStatus",
-            icon: mdiCheckCircle,
-        },
-        {
-            label: "Por Fecha",
-            route: "incidents.byDate",
-            icon: mdiCalendar,
-        },
+            {
+                label: "Mapa de incidencias",
+                route: "incident/Map",
+                icon: mdiMapMarkerAlertOutline,
+            },
+            {
+                label: "Gráfico de incidencias",
+                route: "graphic.index",
+                icon: mdiChartBarStacked,
+            },
+            {
+                label: "Ver Incidencias",
+                route: "incidents.view",
+                icon: mdiFire,
+            },
+            {
+                label: "Por Municipio",
+                route: "incidents.byMunicipality",
+                icon: mdiCity,
+            },
+            {
+                label: "Por Tipo",
+                route: "incidents.byType",
+                icon: mdiTag,
+            },
+            {
+                label: "Por Estatus",
+                route: "incidents.byStatus",
+                icon: mdiCheckCircle,
+            },
+            {
+                label: "Por Fecha",
+                route: "incidents.byDate",
+                icon: mdiCalendar,
+            },
+            {
+                label: "Consulta dinámica",
+                route: "dynamic.search",   // nombre de ruta que ya existe
+                icon: mdiTableCog
+            }
         ],
-      },
+    },
 ];
